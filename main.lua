@@ -5,7 +5,7 @@ local mod = RegisterMod("f to open", 1)
 -- VARIABLES
 --###########
 
-local chests = {
+local CHESTS_ENTITIES = {
             PickupVariant.PICKUP_CHEST,
             PickupVariant.PICKUP_MIMICCHEST,
             PickupVariant.PICKUP_ETERNALCHEST,
@@ -29,7 +29,8 @@ function mod:OnRainCloudInit(cloud)
     local player = Isaac.GetPlayer()
     local distance = (player.Position - cloud.Parent.Position):Length()
 
-    if cloud.Parent and distance <= RADIUS
+    if cloud.Parent
+    and distance <= RADIUS
     and cloud.Parent:GetData().isInRange then
 
         cloud.Position = cloud.Parent.Position
@@ -51,14 +52,14 @@ function mod:onPlayerSpawned()
     for _, entity in ipairs(radius) do
         local pickup = entity:ToPickup()
 
-        for chest_type = 1, #chests do
-            if pickup ~= nil and pickup.Variant == chests[chest_type]
+        for chest_type = 1, #CHESTS_ENTITIES do
+            if pickup ~= nil and pickup.Variant == CHESTS_ENTITIES[chest_type]
             and pickup.SubType == 1 then
 
                 local data = pickup:GetData()
                     
                     if not data.isInRange then
-
+                        data.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
                         local cloud = Isaac.Spawn(EntityType.ENTITY_EFFECT,RAIN_CLOUD_VARIANT,0,entity.Position,Vector(0,0),nil)
 
                         cloud.Parent = pickup
@@ -74,7 +75,18 @@ function mod:onPlayerSpawned()
     
 end
 
-mod:AddCallback(ModCallbacks.MC_PERFECT_UPD , mod.onPlayerSpawned)
+mod:AddCallback(ModCallbacks.MC_POST_UPDATE , mod.onPlayerSpawned)
+
+function mod:disableCollisisons(pickup)
+    for _, entity in ipairs(CHESTS_ENTITIES) do
+        if entity == pickup.Variant then
+            return true
+        end
+    end
+    
+end
+
+mod:AddCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, mod.disableCollisisons)
 
 -- Opens the chest if the key 'X' is pressed
 function mod:openChest()
@@ -88,9 +100,10 @@ function mod:openChest()
         for _, entity in ipairs(radius) do
             local pickup = entity:ToPickup()
 
-            for chest_type = 1, #chests do
-                if pickup ~= nil and pickup.Variant == chests[chest_type] then
+            for chest_type = 1, #CHESTS_ENTITIES do
+                if pickup ~= nil and pickup.Variant == CHESTS_ENTITIES[chest_type] then
                     local data = pickup:GetData()
+
                     
                     if data.isInRange == true then
                         
@@ -116,10 +129,10 @@ function mod:FindChests()
     local entities = Isaac.GetRoomEntities()
 
     for _, entity in ipairs(entities) do
-        for chest_type = 1, #chests do
+        for chest_type = 1, #CHESTS_ENTITIES do
             local pickup = entity:ToPickup()
             
-            if pickup ~= nil and pickup.Variant == chests[chest_type] then
+            if pickup ~= nil and pickup.Variant == CHESTS_ENTITIES[chest_type] then
                 
                 local data = pickup:GetData()
                 
